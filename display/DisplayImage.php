@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @copyright Copyright &copy; Pavels Radajevs, 2014
+ * @package yii2-display-image
+ * @version 1.0.0
+ */
+
 namespace pavlinter\display;
 
 use Imagine\Image\Box;
@@ -10,7 +16,6 @@ use yii\helpers\FileHelper;
 use yii\helpers\Html;
 use yii\imagine\Image;
 use Imagine\Image\ManipulatorInterface;
-
 
 class DisplayImage extends \yii\base\Widget
 {
