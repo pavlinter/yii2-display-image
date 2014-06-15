@@ -1,6 +1,6 @@
 {
     "name": "pavlinter/yii2-display-image",
-    "description": "Auto resize image for Yii2",
+    "description": "Yii2: Auto resize image",
     "keywords": ["yii2", "displayimage", "display-image","display", "image", "resize"],
     "type": "yii2-extension",
     "license": "BSD 3-Clause",
