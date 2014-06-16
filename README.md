@@ -14,7 +14,7 @@ php composer.phar require --prefer-dist pavlinter/yii2-display-image "dev-master
 or add
 
 ```
-"pavlinter/pavlinter/yii2-display-image": "dev-master"
+"pavlinter/yii2-display-image": "dev-master"
 ```
 
 to the require section of your `composer.json` file.
