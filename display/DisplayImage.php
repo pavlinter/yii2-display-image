@@ -21,6 +21,7 @@ class DisplayImage extends \yii\base\Widget
 {
     const MODE_INSET    = ManipulatorInterface::THUMBNAIL_INSET;
     const MODE_OUTBOUND = ManipulatorInterface::THUMBNAIL_OUTBOUND;
+    const MODE_STATIC   = 'static';
     /**
      * @var integer id from db
      */
@@ -45,6 +46,17 @@ class DisplayImage extends \yii\base\Widget
      * @var string the image category
      */
     public $category;
+    /**
+     * @var string the background color for MODE_STATIC
+     * default white value
+     */
+    public $bgColor = '000000';
+    /**
+     * @var integer the background transparent for MODE_STATIC
+     * default 0 value (not transparent)
+     * range 0 - 100
+     */
+    public $bgAlpha = 100;
     /**
      * @var array html options
      */
@@ -155,14 +167,20 @@ class DisplayImage extends \yii\base\Widget
             $idRowPath = '';
         }
 
+        if ($this->mode === self::MODE_STATIC) {
+            $bgColor = '(' . $this->bgColor . '-' . $this->bgAlpha . ')';
+        } else {
+            $bgColor = '';
+        }
+
         if ($this->width && !$this->height) {
             $this->height = $this->width;
-            $this->sizeDirectory = $this->width . 'x-' . $this->mode . '/';
+            $this->sizeDirectory = $this->width . 'x-' . $this->mode . $bgColor . '/';
         } elseif(!$this->width && $this->height) {
             $this->width = $this->height;
-            $this->sizeDirectory = $this->height . 'x-' . $this->mode . '/';
+            $this->sizeDirectory = $this->height . 'x-' . $this->mode . $bgColor .  '/';
         } else {
-            $this->sizeDirectory = $this->width . 'x' . $this->height . '-' . $this->mode . '/';
+            $this->sizeDirectory = $this->width . 'x' . $this->height . '-' . $this->mode . $bgColor .  '/';
         }
 
         if ($this->image && $this->is_image($this->imagesDir . $idRowPath . $this->image)) {
@@ -185,10 +203,14 @@ class DisplayImage extends \yii\base\Widget
 
     public function resizeDefault($filename)
     {
-        $img = Image::getImagine()->open($filename);
-        $img = $img->thumbnail(new Box($this->width, $this->height));
-        FileHelper::createDirectory($this->defaultDir . $this->sizeDirectory);
         if (!file_exists($this->defaultDir . $this->sizeDirectory . $this->defaultImage)) {
+            FileHelper::createDirectory($this->defaultDir . $this->sizeDirectory);
+            $img = Image::getImagine()->open($filename);
+            if ($this->mode === self::MODE_STATIC) {
+                $img = $this->resizeStatic($this->width,$this->height,$img);
+            } else {
+                $img = $img->thumbnail(new Box($this->width, $this->height), $this->mode);
+            }
             $img->save($this->defaultDir . $this->sizeDirectory . $this->defaultImage);
         }
         return $this->defaultWebDir . $this->sizeDirectory . $this->defaultImage;
@@ -209,13 +231,30 @@ class DisplayImage extends \yii\base\Widget
         if (!isset($this->options['alt'])) {
             $this->options['alt'] = $image;
         }
-
-        $img = $img->thumbnail(new Box($this->width, $this->height), $this->mode);
-        FileHelper::createDirectory($this->imagesDir . $idRowPath . $this->sizeDirectory);
         if (!file_exists($this->imagesDir . $idRowPath . $this->sizeDirectory . $image)) {
+            if ($this->mode === self::MODE_STATIC) {
+                $img = $this->resizeStatic($this->width, $this->height, $img);
+            } else {
+                $img = $img->thumbnail(new Box($this->width, $this->height), $this->mode);
+            }
+            FileHelper::createDirectory($this->imagesDir . $idRowPath . $this->sizeDirectory);
             $img->save($this->imagesDir . $idRowPath . $this->sizeDirectory . $image);
         }
         return $this->imagesWebDir . $idRowPath . $this->sizeDirectory . $image;
+    }
+    public function resizeStatic($width,$height,$originalImage)
+    {
+        $Box = new Box($width,$height);
+        $newImage = $originalImage->thumbnail($Box);
+        $boxNew = $newImage->getSize();
+
+        $x = ($Box->getWidth() - $boxNew->getWidth())/2;
+        $y = ($Box->getHeight() - $boxNew->getHeight())/2;
+
+        $point = new \Imagine\Image\Point($x,$y);
+        $color = new \Imagine\Image\Color('#' . $this->bgColor,$this->bgAlpha);
+
+        return Image::getImagine()->create($Box, $color)->paste($newImage,$point);
     }
     public function display($src)
     {
