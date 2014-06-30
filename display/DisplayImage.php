@@ -22,6 +22,7 @@ class DisplayImage extends \yii\base\Widget
     const MODE_INSET    = ManipulatorInterface::THUMBNAIL_INSET;
     const MODE_OUTBOUND = ManipulatorInterface::THUMBNAIL_OUTBOUND;
     const MODE_STATIC   = 'static';
+
     /**
      * @var integer id from db
      */
@@ -47,16 +48,16 @@ class DisplayImage extends \yii\base\Widget
      */
     public $category;
     /**
-     * @var string the background color for MODE_STATIC
+     * @var string the background color for [[DisplayImage::MODE_STATIC]] or [[resize]]
      * default white value
      */
     public $bgColor = '000000';
     /**
-     * @var integer the background transparent for MODE_STATIC
+     * @var integer the background transparent for [[DisplayImage::MODE_STATIC]] or [[resize]]
      * default 0 value (not transparent)
      * range 0 - 100
      */
-    public $bgAlpha = 100;
+    public $bgAlpha = 0;
     /**
      * @var array html options
      */
@@ -83,9 +84,10 @@ class DisplayImage extends \yii\base\Widget
      */
     public $returnSrc = false;
     /**
-     * @var string [[Imagine\Image\ManipulatorInterface::THUMBNAIL_INSET || Imagine\Image\ManipulatorInterface::THUMBNAIL_OUTBOUND]]
+     * @var string [[DisplayImage::MODE_INSET || DisplayImage::MODE_OUTBOUND || DisplayImage::MODE_STATIC]]
+     * or create own resize [[resize]]
      */
-    public $mode = self::MODE_OUTBOUND;
+    public $mode = self::MODE_INSET;
     /**
      * @var function encode new image name
      */
@@ -111,9 +113,13 @@ class DisplayImage extends \yii\base\Widget
      */
     public $defaultImage = 'default.png';
     /**
+     * @var function the own resize
+     */
+    public $resize;
+    /**
      * @var string generate size directory name
      */
-    private $sizeDirectory;
+    public $sizeDirectory;
 
 
     public function init()
@@ -157,30 +163,28 @@ class DisplayImage extends \yii\base\Widget
             }
         }
 
+        if ($this->resize !== null && !is_callable($this->resize)) {
+            throw new InvalidConfigException('The "resize" property must be anonymous function.');
+        }
+
         $this->imagesDir    = Yii::getAlias(rtrim($this->imagesDir, '/')) . '/';
         $this->imagesWebDir = Yii::getAlias(rtrim($this->imagesWebDir, '/')) . '/';
+
+        if ($this->width && !$this->height) {
+            $this->height = $this->width;
+        } elseif(!$this->width && $this->height) {
+            $this->width = $this->height;
+        }
+
+        if ($this->sizeDirectory === null) {
+            $this->sizeDirectory = $this->width . 'x' . $this->height . '_' . $this->mode . '_' . $this->bgColor . '_' . $this->bgAlpha .  '/';
+        }
 
         if ($this->id_row) {
             FileHelper::createDirectory($this->imagesDir . $this->id_row);
             $idRowPath = $this->id_row . '/';
         } else {
             $idRowPath = '';
-        }
-
-        if ($this->mode === self::MODE_STATIC) {
-            $bgColor = '(' . $this->bgColor . '-' . $this->bgAlpha . ')';
-        } else {
-            $bgColor = '';
-        }
-
-        if ($this->width && !$this->height) {
-            $this->height = $this->width;
-            $this->sizeDirectory = $this->width . 'x-' . $this->mode . $bgColor . '/';
-        } elseif(!$this->width && $this->height) {
-            $this->width = $this->height;
-            $this->sizeDirectory = $this->height . 'x-' . $this->mode . $bgColor .  '/';
-        } else {
-            $this->sizeDirectory = $this->width . 'x' . $this->height . '-' . $this->mode . $bgColor .  '/';
         }
 
         if ($this->image && $this->is_image($this->imagesDir . $idRowPath . $this->image)) {
@@ -206,7 +210,9 @@ class DisplayImage extends \yii\base\Widget
         if (!file_exists($this->defaultDir . $this->sizeDirectory . $this->defaultImage)) {
             FileHelper::createDirectory($this->defaultDir . $this->sizeDirectory);
             $img = Image::getImagine()->open($filename);
-            if ($this->mode === self::MODE_STATIC) {
+            if ($this->resize) {
+                $img = call_user_func($this->resize, $this, $img);
+            } elseif ($this->mode === self::MODE_STATIC) {
                 $img = $this->resizeStatic($this->width,$this->height,$img);
             } else {
                 $img = $img->thumbnail(new Box($this->width, $this->height), $this->mode);
@@ -232,7 +238,9 @@ class DisplayImage extends \yii\base\Widget
             $this->options['alt'] = $image;
         }
         if (!file_exists($this->imagesDir . $idRowPath . $this->sizeDirectory . $image)) {
-            if ($this->mode === self::MODE_STATIC) {
+            if ($this->resize) {
+                $img = call_user_func($this->resize, $this, $img);
+            } elseif ($this->mode === self::MODE_STATIC) {
                 $img = $this->resizeStatic($this->width, $this->height, $img);
             } else {
                 $img = $img->thumbnail(new Box($this->width, $this->height), $this->mode);

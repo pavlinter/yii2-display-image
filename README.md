@@ -27,20 +27,41 @@ Yii::$container->set('pavlinter\display\DisplayImage', [
     //'returnSrc' => false,
     //'mode' => DisplayImage::MODE_INSET,
     //'defaultImage' => 'default.png',
+    //'bgColor' => '000000',
+    //'bgAlpha' => 0,
     'config' => [
         'items' => [
             'imagesWebDir' => '@web/display-images/items',
             'imagesDir' => '@webroot/display-images/items',
             'defaultWebDir' => '@web/display-images/default',
             'defaultDir' => '@webroot/display-images/default',
-            'mode' => DisplayImage::MODE_OUTBOUND,
+            'mode' => \pavlinter\display\DisplayImage::MODE_STATIC,
         ],
         'all' => [
             'imagesWebDir' => '@web/display-images/images',
             'imagesDir' => '@webroot/display-images/images',
             'defaultWebDir' => '@web/display-images/default',
             'defaultDir' => '@webroot/display-images/default',
-        ]
+            'mode' => \pavlinter\display\DisplayImage::MODE_OUTBOUND,
+        ],
+        'users' => [
+            'imagesWebDir' => '@web/display-images/users',
+            'imagesDir' => '@webroot/display-images/users',
+            'defaultWebDir' => '@web/display-images/default',
+            'defaultDir' => '@webroot/display-images/default',
+            'mode' => 'ownMode',
+            'bgColor' => 'ff0000',
+            'resize' => function ($sender, $originalImage) {
+
+                    $Box = new \Imagine\Image\Box($sender->width, $sender->height);
+                    $newImage = $originalImage->thumbnail($Box);
+
+                    $point = new \Imagine\Image\Point(0, 0);
+                    $color = new \Imagine\Image\Color($sender->bgColor, $sender->bgAlpha);
+
+                    return yii\imagine\Image::getImagine()->create($Box, $color)->paste($newImage, $point);
+            },
+        ],
     ]
 ]);
 return [
@@ -99,5 +120,13 @@ echo DisplayImage::widget([ //return resized image path
     'height' => 130,
     'image' => '334.gif',
     'category' => 'all',
+]);
+
+echo DisplayImage::widget([ //own resize mode
+    'id_row' => 3,
+    'width' => 100,
+    'height' => 160,
+    'image' => '3.jpeg',
+    'category' => 'users',
 ]);
 ```
