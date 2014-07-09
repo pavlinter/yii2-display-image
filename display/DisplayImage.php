@@ -197,7 +197,7 @@ class DisplayImage extends \yii\base\Widget
             $this->defaultDir       = Yii::getAlias(rtrim($this->defaultDir, '/')) . '/';
             $this->defaultWebDir    = Yii::getAlias(rtrim($this->defaultWebDir, '/')) . '/';
             if (!$this->width && !$this->height) {
-                $src = $this->defaultDir . $this->defaultImage;
+                $src = $this->defaultWebDir . $this->defaultImage;
             } else {
                 $src = $this->resizeDefault($this->defaultDir . $this->defaultImage);
             }
