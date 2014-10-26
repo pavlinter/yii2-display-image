@@ -29,6 +29,10 @@ Yii::$container->set('pavlinter\display\DisplayImage', [
     //'defaultImage' => 'default.png',
     //'bgColor' => '000000',
     //'bgAlpha' => 0,
+    //'cacheDir' => '@webroot/display-images-cache',
+    //'cacheWebDir' => '@web/display-images-cache',
+    //'generalDefaultDir' => true
+    //'defaultCategory' = 'default',
     'config' => [
         'items' => [
             'imagesWebDir' => '@web/display-images/items',
