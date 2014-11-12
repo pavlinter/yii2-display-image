@@ -78,6 +78,12 @@ Usage
 ```php
 use pavlinter\display\DisplayImage;
 
+echo DisplayImage::widget([ //subfolders image
+    'width' => 120,
+    'image' => '/subfolders/bg.jpg', // or subfolders/bg.jpg
+    'category' => 'all',
+]);
+
 echo DisplayImage::widget([ //return resized Html::img
     'id_row' => 2,
     'width' => 100,

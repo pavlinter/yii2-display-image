@@ -183,6 +183,7 @@ class DisplayImage extends \yii\base\Widget
             throw new InvalidConfigException('The "resize" property must be anonymous function.');
         }
 
+        $this->image            = ltrim($this->image, '/');
         $this->imagesDir        = Yii::getAlias(rtrim($this->imagesDir, '/')) . '/';
         $this->imagesWebDir     = Yii::getAlias(rtrim($this->imagesWebDir, '/')) . '/';
 
@@ -254,11 +255,18 @@ class DisplayImage extends \yii\base\Widget
     }
     public function resize($filename, $idRowPath)
     {
-        $img = Image::getImagine()->open($filename);
-        $image = $this->image;
+        $img        = Image::getImagine()->open($filename);
+        $image      = $this->image;
+        $basename   = basename($image);
+        $dir        = '';
+        if ($image != $basename) {
+            $dir = dirname($image) . '/';
+            $image = $basename;
+            unset($basename);
+        }
 
         if ($this->name) {
-            $ext = '.' . $this->getExtension($this->image);
+            $ext = '.' . $this->getExtension($image);
             if (is_callable($this->encodeName)) {
                 $image = call_user_func($this->encodeName, $this->name). $ext;
             } else {
@@ -268,13 +276,15 @@ class DisplayImage extends \yii\base\Widget
         if (!isset($this->options['alt'])) {
             $this->options['alt'] = $image;
         }
+
+
         if ($this->cacheDir !== false && $this->cacheWebDir !== false) {
-            $imagesDir      = Yii::getAlias(rtrim($this->cacheDir, '/')) . '/' . $this->category . '/';
-            $imagesWebDir   = Yii::getAlias(rtrim($this->cacheWebDir, '/')) . '/' . $this->category . '/';
+            $imagesDir      = Yii::getAlias(rtrim($this->cacheDir, '/')) . '/' . $this->category . '/' . $dir;
+            $imagesWebDir   = Yii::getAlias(rtrim($this->cacheWebDir, '/')) . '/' . $this->category . '/' . $dir;
             FileHelper::createDirectory($imagesDir);
         } else {
-            $imagesDir      = $this->imagesDir;
-            $imagesWebDir   = $this->imagesWebDir;
+            $imagesDir      = $this->imagesDir . $dir;
+            $imagesWebDir   = $this->imagesWebDir . $dir;
         }
 
 
