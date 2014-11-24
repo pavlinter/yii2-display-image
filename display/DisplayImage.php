@@ -136,6 +136,10 @@ class DisplayImage extends \yii\base\Widget
      * @var string URL path to cache directory
      */
     public $cacheWebDir = '@web/display-images-cache';
+    /**
+     * @var integer update resize images after seconds
+     */
+    public $cacheSeconds;
 
 
     public function init()
@@ -158,6 +162,7 @@ class DisplayImage extends \yii\base\Widget
             'defaultDir' => $this->defaultDir,
             'defaultImage' => $this->defaultImage,
             'mode' => $this->mode,
+            'cacheSeconds' => $this->cacheSeconds,
         ],$this->config[$this->category]);
 
         if (empty($config['imagesWebDir'])) {
@@ -209,7 +214,7 @@ class DisplayImage extends \yii\base\Widget
             if (!$this->width && !$this->height) {
                 $src = $this->imagesWebDir . $idRowPath . $this->image;
             } else {
-                $src = $this->resize($this->imagesDir . $idRowPath . $this->image, $idRowPath);
+                $src = $this->resize($this->imagesDir . $idRowPath . $this->image, $idRowPath, $config);
             }
         } else {
             $this->defaultDir       = Yii::getAlias(rtrim($this->defaultDir, '/')) . '/';
@@ -253,7 +258,7 @@ class DisplayImage extends \yii\base\Widget
         }
         return $defaultWebDir . $this->sizeDirectory . $this->defaultImage;
     }
-    public function resize($filename, $idRowPath)
+    public function resize($filename, $idRowPath, $config)
     {
         $img        = Image::getImagine()->open($filename);
         $image      = $this->image;
@@ -287,8 +292,11 @@ class DisplayImage extends \yii\base\Widget
             $imagesWebDir   = $this->imagesWebDir . $dir;
         }
 
-
-        if (!file_exists($imagesDir . $idRowPath . $this->sizeDirectory . $image)) {
+        $exists = file_exists($imagesDir . $idRowPath . $this->sizeDirectory . $image);
+        if ($exists && $config['cacheSeconds'] !== null) {
+            $exists = time() <= $config['cacheSeconds'] + filemtime($imagesDir . $idRowPath . $this->sizeDirectory . $image);
+        }
+        if (!$exists) {
             if ($this->resize) {
                 $img = call_user_func($this->resize, $this, $img);
             } elseif ($this->mode === self::MODE_STATIC) {
