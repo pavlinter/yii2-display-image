@@ -137,7 +137,7 @@ class DisplayImage extends \yii\base\Widget
      */
     public $cacheWebDir = '@web/display-images-cache';
     /**
-     * @var integer update resize images after seconds
+     * @var integer rewrite resized image after seconds
      */
     public $cacheSeconds;
 

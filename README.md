@@ -89,6 +89,7 @@ echo DisplayImage::widget([ //return resized Html::img
     'width' => 100,
     'image' => 'desktopwal.jpg',
     'category' => 'items',
+    'cacheSeconds' => 60 * 5, //rewrite resized image after 5 min
 ]);
 
 echo DisplayImage::widget([ //return resized Html::img
