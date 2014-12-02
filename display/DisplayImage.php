@@ -92,6 +92,10 @@ class DisplayImage extends \yii\base\Widget
      */
     public $returnSrc = false;
     /**
+     * @var boolean return absolute path
+     */
+    public $absolutePath = false;
+    /**
      * @var string [[DisplayImage::MODE_INSET || DisplayImage::MODE_OUTBOUND || DisplayImage::MODE_STATIC]]
      * or create own resize [[resize]]
      */
@@ -325,6 +329,12 @@ class DisplayImage extends \yii\base\Widget
     }
     public function display($src)
     {
+        if ($this->absolutePath === true) {
+            $src = Yii::$app->getRequest()->getHostInfo() . $src;
+        } else if(is_string($this->absolutePath)) {
+            $src = $this->absolutePath . $src;
+        }
+
         if ($this->returnSrc) {
             return $src;
         }
