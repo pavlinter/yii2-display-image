@@ -17,6 +17,10 @@ use yii\helpers\Html;
 use yii\imagine\Image;
 use Imagine\Image\ManipulatorInterface;
 
+/**
+ * Class DisplayImage
+ * @package pavlinter\display
+ */
 class DisplayImage extends \yii\base\Widget
 {
     const MODE_INSET    = ManipulatorInterface::THUMBNAIL_INSET;
@@ -99,9 +103,9 @@ class DisplayImage extends \yii\base\Widget
      * @var string [[DisplayImage::MODE_INSET || DisplayImage::MODE_OUTBOUND || DisplayImage::MODE_STATIC]]
      * or create own resize [[resize]]
      */
-    public $mode = self::MODE_INSET;
+    public $mode;
     /**
-     * @var function encode new image name
+     * @var callable encode new image name
      */
     public $encodeName;
     /**
@@ -123,9 +127,9 @@ class DisplayImage extends \yii\base\Widget
     /**
      * @var string the name default image
      */
-    public $defaultImage = 'default.png';
+    public $defaultImage;
     /**
-     * @var function the own resize
+     * @var callable the own resize
      */
     public $resize;
     /**
@@ -145,7 +149,9 @@ class DisplayImage extends \yii\base\Widget
      */
     public $cacheSeconds;
 
-
+    /**
+     * @throws InvalidConfigException
+     */
     public function init()
     {
         parent::init();
@@ -159,15 +165,23 @@ class DisplayImage extends \yii\base\Widget
             throw new InvalidConfigException('Set "config" for "' . $this->category . '".');
         }
 
-        $config = ArrayHelper::merge([
-            'imagesWebDir' => $this->imagesWebDir,
-            'imagesDir' => $this->imagesDir,
-            'defaultWebDir' => $this->defaultWebDir,
-            'defaultDir' => $this->defaultDir,
-            'defaultImage' => $this->defaultImage,
-            'mode' => $this->mode,
-            'cacheSeconds' => $this->cacheSeconds,
-        ],$this->config[$this->category]);
+        $forceConfig = [];
+        $props  = ['imagesWebDir', 'imagesDir', 'defaultWebDir', 'defaultDir', 'defaultImage', 'mode', 'cacheSeconds'];
+        foreach ($props as $prop) {
+            if ($this->{$prop} !== null) {
+                $forceConfig[$prop] = $this->{$prop};
+            }
+        }
+        $defaultConfig = [
+            'imagesWebDir' => null,
+            'imagesDir' => null,
+            'defaultWebDir' => null,
+            'defaultDir' => null,
+            'defaultImage' => 'default.png',
+            'mode' => self::MODE_INSET,
+            'cacheSeconds' => null,
+        ];
+        $config = ArrayHelper::merge($defaultConfig, $this->config[$this->category], $forceConfig);
 
         if (empty($config['imagesWebDir'])) {
             throw new InvalidConfigException('The "imagesWebDir" property must be set for "' . $this->category . '".');
@@ -214,11 +228,11 @@ class DisplayImage extends \yii\base\Widget
             $idRowPath = '';
         }
 
-        if ($this->image && $this->is_image($this->imagesDir . $idRowPath . $this->image)) {
+        if ($this->image && self::is_image($this->imagesDir . $idRowPath . $this->image)) {
             if (!$this->width && !$this->height) {
                 $src = $this->imagesWebDir . $idRowPath . $this->image;
             } else {
-                $src = $this->resize($this->imagesDir . $idRowPath . $this->image, $idRowPath, $config);
+                $src = $this->resize($this->imagesDir . $idRowPath . $this->image, $idRowPath);
             }
         } else {
             $this->defaultDir       = Yii::getAlias(rtrim($this->defaultDir, '/')) . '/';
@@ -232,6 +246,10 @@ class DisplayImage extends \yii\base\Widget
         echo $this->display($src);
     }
 
+    /**
+     * @param $filename
+     * @return string
+     */
     public function resizeDefault($filename)
     {
         if ($this->cacheDir !== false && $this->cacheWebDir !== false) {
@@ -248,7 +266,12 @@ class DisplayImage extends \yii\base\Widget
             $defaultWebDir   = $this->defaultWebDir;
         }
 
-        if (!file_exists($defaultDir . $this->sizeDirectory . $this->defaultImage)) {
+        $exists = file_exists($defaultDir . $this->sizeDirectory . $this->defaultImage);
+        if ($exists && $this->cacheSeconds !== null) {
+            $exists = time() <= $this->cacheSeconds + filemtime($defaultDir . $this->sizeDirectory . $this->defaultImage);
+        }
+
+        if (!$exists) {
             FileHelper::createDirectory($defaultDir . $this->sizeDirectory);
             $img = Image::getImagine()->open($filename);
             if ($this->resize) {
@@ -262,7 +285,13 @@ class DisplayImage extends \yii\base\Widget
         }
         return $defaultWebDir . $this->sizeDirectory . $this->defaultImage;
     }
-    public function resize($filename, $idRowPath, $config)
+
+    /**
+     * @param $filename
+     * @param $idRowPath
+     * @return string
+     */
+    public function resize($filename, $idRowPath)
     {
         $img        = Image::getImagine()->open($filename);
         $image      = $this->image;
@@ -275,11 +304,11 @@ class DisplayImage extends \yii\base\Widget
         }
 
         if ($this->name) {
-            $ext = '.' . $this->getExtension($image);
+            $ext = '.' . self::getExtension($image);
             if (is_callable($this->encodeName)) {
                 $image = call_user_func($this->encodeName, $this->name). $ext;
             } else {
-                $image = $this->encodeName($this->name) . $ext;
+                $image = self::encodeName($this->name) . $ext;
             }
         }
         if (!isset($this->options['alt'])) {
@@ -297,8 +326,8 @@ class DisplayImage extends \yii\base\Widget
         }
 
         $exists = file_exists($imagesDir . $idRowPath . $this->sizeDirectory . $image);
-        if ($exists && $config['cacheSeconds'] !== null) {
-            $exists = time() <= $config['cacheSeconds'] + filemtime($imagesDir . $idRowPath . $this->sizeDirectory . $image);
+        if ($exists && $this->cacheSeconds !== null) {
+            $exists = time() <= $this->cacheSeconds + filemtime($imagesDir . $idRowPath . $this->sizeDirectory . $image);
         }
         if (!$exists) {
             if ($this->resize) {
@@ -313,6 +342,13 @@ class DisplayImage extends \yii\base\Widget
         }
         return $imagesWebDir . $idRowPath . $this->sizeDirectory . $image;
     }
+
+    /**
+     * @param $width
+     * @param $height
+     * @param $originalImage
+     * @return ManipulatorInterface
+     */
     public function resizeStatic($width,$height,$originalImage)
     {
         $Box = new Box($width,$height);
@@ -327,6 +363,11 @@ class DisplayImage extends \yii\base\Widget
 
         return Image::getImagine()->create($Box, $color)->paste($newImage,$point);
     }
+
+    /**
+     * @param $src
+     * @return string
+     */
     public function display($src)
     {
         if ($this->absolutePath === true) {
@@ -340,19 +381,34 @@ class DisplayImage extends \yii\base\Widget
         }
         return Html::img($src, $this->options);
     }
-    public function is_image($path)
+
+    /**
+     * @param $path
+     * @return array|bool
+     */
+    public static function is_image($path)
     {
         if (!is_file($path)) {
             return false;
         }
-        $ext = $this->getExtension($path);
-        return $this->supported($ext);
+        $ext = self::getExtension($path);
+        return self::supported($ext);
     }
-    public function getExtension($path)
+
+    /**
+     * @param $path
+     * @return string
+     */
+    public static function getExtension($path)
     {
         return strtolower(pathinfo($path, PATHINFO_EXTENSION));
     }
-    private  function encodeName($string) {
+
+    /**
+     * @param $string
+     * @return mixed|string
+     */
+    public static function encodeName($string) {
 
         if (function_exists('iconv')) {
             $string = @iconv('UTF-8', 'ASCII//TRANSLIT', $string);
@@ -365,7 +421,12 @@ class DisplayImage extends \yii\base\Widget
 
         return $string;
     }
-    private function supported(&$format = null)
+
+    /**
+     * @param null $format
+     * @return array|bool
+     */
+    public static function supported($format = null)
     {
         $formats = ['gif', 'jpeg', 'png', 'wbmp', 'xbm'];
 
