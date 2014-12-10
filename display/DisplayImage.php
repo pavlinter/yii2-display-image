@@ -133,7 +133,7 @@ class DisplayImage extends \yii\base\Widget
      */
     public $resize;
     /**
-     * @var string generate size directory name
+     * @var string|callable generate size directory name
      */
     public $sizeDirectory;
     /**
@@ -144,6 +144,10 @@ class DisplayImage extends \yii\base\Widget
      * @var string URL path to cache directory
      */
     public $cacheWebDir = '@web/display-images-cache';
+    /**
+     * @var string create cache directory in root images
+     */
+    public $innerCacheDir; //example: 'cacheDirectory' takes precedence over [[cacheDir]]
     /**
      * @var integer rewrite resized image after seconds
      */
@@ -158,9 +162,13 @@ class DisplayImage extends \yii\base\Widget
         if (empty($this->config)) {
             throw new InvalidConfigException('The "config" property must be set.');
         }
+        if (empty($this->cacheDir) && empty($this->innerCacheDir)) {
+            throw new InvalidConfigException('The "cacheDir" or "innerCacheDir" property must be set.');
+        }
         if (empty($this->category)) {
             throw new InvalidConfigException('The "category" property must be set.');
         }
+
         if (!isset($this->config[$this->category])) {
             throw new InvalidConfigException('Set "config" for "' . $this->category . '".');
         }
@@ -218,8 +226,12 @@ class DisplayImage extends \yii\base\Widget
         }
 
         if ($this->sizeDirectory === null) {
-            $this->sizeDirectory = $this->width . 'x' . $this->height . '_' . $this->mode . '_' . $this->bgColor . '_' . $this->bgAlpha .  '/';
+            $this->sizeDirectory = $this->width . 'x' . $this->height . '_' . $this->mode . '_' . $this->bgColor . '_' . $this->bgAlpha;
+        } else if (is_callable($this->sizeDirectory)) {
+            $this->sizeDirectory = call_user_func($this->sizeDirectory, $this);
         }
+        $this->sizeDirectory = $this->sizeDirectory . '/' ;
+
 
         if ($this->id_row) {
             FileHelper::createDirectory($this->imagesDir . $this->id_row);
@@ -228,7 +240,7 @@ class DisplayImage extends \yii\base\Widget
             $idRowPath = '';
         }
 
-        if ($this->image && self::is_image($this->imagesDir . $idRowPath . $this->image)) {
+        if ($this->image && DisplayHelper::is_image($this->imagesDir . $idRowPath . $this->image)) {
             if (!$this->width && !$this->height) {
                 $src = $this->imagesWebDir . $idRowPath . $this->image;
             } else {
@@ -252,7 +264,7 @@ class DisplayImage extends \yii\base\Widget
      */
     public function resizeDefault($filename)
     {
-        if ($this->cacheDir !== false && $this->cacheWebDir !== false) {
+        if (empty($this->innerCacheDir)) {
             if ($this->generalDefaultDir) {
                 $defCat = $this->defaultCategory . '/';
             } else {
@@ -262,8 +274,8 @@ class DisplayImage extends \yii\base\Widget
             $defaultWebDir   = Yii::getAlias(rtrim($this->cacheWebDir, '/')) . '/' . $defCat;
             FileHelper::createDirectory($defaultDir);
         } else {
-            $defaultDir      = $this->defaultDir;
-            $defaultWebDir   = $this->defaultWebDir;
+            $defaultDir      = $this->defaultDir  . $this->innerCacheDir. '/';
+            $defaultWebDir   = $this->defaultWebDir  . $this->innerCacheDir . '/';
         }
 
         $exists = file_exists($defaultDir . $this->sizeDirectory . $this->defaultImage);
@@ -304,30 +316,29 @@ class DisplayImage extends \yii\base\Widget
         }
 
         if ($this->name) {
-            $ext = '.' . self::getExtension($image);
+            $ext = '.' . DisplayHelper::getExtension($image);
             if (is_callable($this->encodeName)) {
                 $image = call_user_func($this->encodeName, $this->name). $ext;
             } else {
-                $image = self::encodeName($this->name) . $ext;
+                $image = DisplayHelper::encodeName($this->name) . $ext;
             }
         }
         if (!isset($this->options['alt'])) {
             $this->options['alt'] = $image;
         }
 
-
-        if ($this->cacheDir !== false && $this->cacheWebDir !== false) {
-            $imagesDir      = Yii::getAlias(rtrim($this->cacheDir, '/')) . '/' . $this->category . '/' . $dir;
-            $imagesWebDir   = Yii::getAlias(rtrim($this->cacheWebDir, '/')) . '/' . $this->category . '/' . $dir;
+        if (empty($this->innerCacheDir)) {
+            $imagesDir      = Yii::getAlias(rtrim($this->cacheDir, '/')) . '/' . $this->category . '/' . $idRowPath;
+            $imagesWebDir   = Yii::getAlias(rtrim($this->cacheWebDir, '/')) . '/' . $this->category  . '/' . $idRowPath;
             FileHelper::createDirectory($imagesDir);
         } else {
-            $imagesDir      = $this->imagesDir . $dir;
-            $imagesWebDir   = $this->imagesWebDir . $dir;
+            $imagesDir      = $this->imagesDir . $idRowPath . $this->innerCacheDir. '/';
+            $imagesWebDir   = $this->imagesWebDir  . $idRowPath . $this->innerCacheDir. '/';
         }
 
-        $exists = file_exists($imagesDir . $idRowPath . $this->sizeDirectory . $image);
+        $exists = file_exists($imagesDir . $this->sizeDirectory. $dir . $image);
         if ($exists && $this->cacheSeconds !== null) {
-            $exists = time() <= $this->cacheSeconds + filemtime($imagesDir . $idRowPath . $this->sizeDirectory . $image);
+            $exists = time() <= $this->cacheSeconds + filemtime($imagesDir . $this->sizeDirectory. $dir . $image);
         }
         if (!$exists) {
             if ($this->resize) {
@@ -337,10 +348,10 @@ class DisplayImage extends \yii\base\Widget
             } else {
                 $img = $img->thumbnail(new Box($this->width, $this->height), $this->mode);
             }
-            FileHelper::createDirectory($imagesDir . $idRowPath . $this->sizeDirectory);
-            $img->save($imagesDir . $idRowPath . $this->sizeDirectory . $image);
+            FileHelper::createDirectory($imagesDir . $this->sizeDirectory . $dir);
+            $img->save($imagesDir . $this->sizeDirectory . $dir . $image);
         }
-        return $imagesWebDir . $idRowPath . $this->sizeDirectory . $image;
+        return $imagesWebDir . $this->sizeDirectory . $dir . $image;
     }
 
     /**
@@ -382,63 +393,4 @@ class DisplayImage extends \yii\base\Widget
         return Html::img($src, $this->options);
     }
 
-    /**
-     * @param $path
-     * @return array|bool
-     */
-    public static function is_image($path)
-    {
-        if (!is_file($path)) {
-            return false;
-        }
-        $ext = self::getExtension($path);
-        return self::supported($ext);
-    }
-
-    /**
-     * @param $path
-     * @return string
-     */
-    public static function getExtension($path)
-    {
-        return strtolower(pathinfo($path, PATHINFO_EXTENSION));
-    }
-
-    /**
-     * @param $string
-     * @return mixed|string
-     */
-    public static function encodeName($string) {
-
-        if (function_exists('iconv')) {
-            $string = @iconv('UTF-8', 'ASCII//TRANSLIT', $string);
-        }
-        $string = preg_replace("/[^a-zA-Z0-9 \-]/", "", $string);
-        $string = str_replace("-",' ', $string);
-        $string = trim(preg_replace("/\\s+/", " ", $string));
-        $string = strtolower($string);
-        $string = str_replace(" ", "-", $string);
-
-        return $string;
-    }
-
-    /**
-     * @param null $format
-     * @return array|bool
-     */
-    public static function supported($format = null)
-    {
-        $formats = ['gif', 'jpeg', 'png', 'wbmp', 'xbm'];
-
-        if ($format === null) {
-            return $formats;
-        }
-        $format  = strtolower($format);
-
-        if ('jpg' === $format || 'pjpeg' === $format) {
-            $format = 'jpeg';
-        }
-        return in_array($format, $formats);
-    }
-    
 }

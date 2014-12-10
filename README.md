@@ -31,6 +31,7 @@ Yii::$container->set('pavlinter\display\DisplayImage', [
     //'bgAlpha' => 0,
     //'cacheDir' => '@webroot/display-images-cache',
     //'cacheWebDir' => '@web/display-images-cache',
+    //'innerCacheDir' => null, //example: 'cacheDirectory' takes precedence over [[cacheDir]]
     //'generalDefaultDir' => true
     //'defaultCategory' = 'default',
     'config' => [
@@ -76,6 +77,7 @@ return [
 Usage
 -----
 ```php
+use pavlinter\display\DisplayHelper;
 use pavlinter\display\DisplayImage;
 
 echo DisplayImage::widget([ //subfolders image
@@ -140,4 +142,41 @@ echo DisplayImage::widget([ //own resize mode
     'image' => '3.jpeg',
     'category' => 'users',
 ]);
+
+$images  = DisplayHelper::getImages(null, 'all', [ //or [[getImage()]] return first image
+    'width' => 70,
+    'height' => 70,
+], [
+    'minImages' => 6,
+]);
+/*Array
+(
+    [1.jpeg] => /display-images-cache/all/\/70x70_outbound_000000_0/1.jpeg
+    [334.gif] => /display-images-cache/all/\/70x70_outbound_000000_0/334.gif
+    [360958.jpeg] => /display-images-cache/all/\/70x70_outbound_000000_0/360958.jpeg
+    [926.jpg] => /display-images-cache/all/\/70x70_outbound_000000_0/926.jpg
+    [0] => /display-images-cache/default/70x70_outbound_000000_0/default.png
+    [1] => /display-images-cache/default/70x70_outbound_000000_0/default.png
+)*/
+
+$images  = DisplayHelper::getOriginalImages(null, 'all'); //or [[getOriginalImage()]] return first image
+
+/*Array
+(
+    [1.jpeg] => /display-images/images/\1.jpeg
+    [334.gif] => /display-images/images/\334.gif
+    [360958s.JPEG] => /display-images/images/\360958s.JPEG
+    [926.jpg] => /display-images/images/\926.jpg
+)*/
+
+$clearItemId = DisplayHelper::clear('items', 2);
+$clearItems = DisplayHelper::clear('items');
+
+if ($clearItemId) {
+    echo 'Clear item id 2!<br/>';
+}
+if ($clearItems) {
+    echo 'Clear items category!<br/>';
+}
+
 ```
