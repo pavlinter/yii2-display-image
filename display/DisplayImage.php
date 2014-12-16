@@ -52,11 +52,11 @@ class DisplayImage extends \yii\base\Widget
      */
     public $category;
     /**
-     * @var string the default image directory (work if cacheDir set)
+     * @var string the default image directory (work if enabled [[innerCacheDir]])
      */
     public $defaultCategory = DisplayHelper::DEFAULT_CATEGORY;
     /**
-     * @var string general default pictures for all category (work if cacheDir set)
+     * @var string general default pictures for all category (work if enabled [[innerCacheDir]])
      */
     public $generalDefaultDir = true;
     /**
@@ -137,11 +137,11 @@ class DisplayImage extends \yii\base\Widget
      */
     public $sizeDirectory;
     /**
-     * @var string FULL path to cache directory
+     * @var string FULL path to cache directory (work if enabled [[innerCacheDir]])
      */
     public $cacheDir    = '@webroot/display-images-cache';
     /**
-     * @var string URL path to cache directory
+     * @var string URL path to cache directory (work if enabled [[innerCacheDir]])
      */
     public $cacheWebDir = '@web/display-images-cache';
     /**

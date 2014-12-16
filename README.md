@@ -179,4 +179,9 @@ if ($clearItems) {
     echo 'Clear items category!<br/>';
 }
 
+$clearCacheDir = DisplayHelper::clearCacheDir(); //Only for outer directory cache [[innerCacheDir]]
+if ($clearCacheDir) {
+    echo 'Clear cache!<br/>';
+}
+
 ```
