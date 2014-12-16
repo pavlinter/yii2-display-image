@@ -54,7 +54,7 @@ class DisplayImage extends \yii\base\Widget
     /**
      * @var string the default image directory (work if cacheDir set)
      */
-    public $defaultCategory = 'default';
+    public $defaultCategory = DisplayHelper::DEFAULT_CATEGORY;
     /**
      * @var string general default pictures for all category (work if cacheDir set)
      */

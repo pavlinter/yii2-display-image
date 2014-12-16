@@ -20,6 +20,10 @@ class DisplayHelper
 {
     static $config;
 
+    const CACHE_DIR = '@webroot/display-images-cache';
+
+    const DEFAULT_CATEGORY = 'default';
+
     /**
      * @return null
      */
@@ -226,24 +230,52 @@ class DisplayHelper
             return false;
         }
         $innerCacheDir = ArrayHelper::remove($globalConfig, 'innerCacheDir');
-        $cacheDir = rtrim(ArrayHelper::remove($globalConfig, 'cacheDir', '@webroot/display-images-cache'), '/');
+        $cacheDir = Yii::getAlias(rtrim(ArrayHelper::remove($globalConfig, 'cacheDir', self::CACHE_DIR), '/'));
+        $generalDefaultDir = ArrayHelper::remove($categories[$category], 'generalDefaultDir');
+        if ($generalDefaultDir === null) {
+            $generalDefaultDir = ArrayHelper::remove($globalConfig, 'generalDefaultDir', true);
+        }
+        $defaultCategory = ArrayHelper::remove($categories[$category], 'defaultCategory', self::DEFAULT_CATEGORY);
+        $imagesDir = Yii::getAlias(rtrim(ArrayHelper::remove($categories[$category], 'imagesDir'), '/'));
+        $defaultDir = Yii::getAlias(rtrim(ArrayHelper::remove($categories[$category], 'defaultDir'), '/'));
+
         if ($id_row) {
             $id_row = '/' . $id_row;
         }
         if ($innerCacheDir) {
-            $imagesDir = rtrim(ArrayHelper::remove($categories[$category], 'imagesDir'), '/');
             if (empty($imagesDir)) {
                 return false;
             }
-            $cacheDir = $imagesDir . $id_row . '/' . $innerCacheDir;
+            $path = $imagesDir . $id_row . '/' . $innerCacheDir;
+            $defaultCacheDir = $defaultDir . '/' . $innerCacheDir. '/';
         } else {
-            $cacheDir = $cacheDir . '/' . $category . $id_row;
+            $path = $cacheDir . '/' . $category . $id_row;
+            if ($generalDefaultDir) {
+                $defaultCacheDir = $cacheDir . '/' .$defaultCategory . '/';
+            } else {
+                $defaultCacheDir = $cacheDir . '/' .$category . '/' . $defaultCategory . '/';
+            }
         }
-        $cacheDir = Yii::getAlias($cacheDir);
-        FileHelper::removeDirectory($cacheDir);
+        FileHelper::removeDirectory($path);
+        FileHelper::removeDirectory($defaultCacheDir);
         return true;
     }
 
+    /**
+     * Clear all cache (Only for outer directory cache)
+     */
+    public static function clearCacheDir()
+    {
+        $globalConfig = self::getConfig();
+
+        $innerCacheDir = ArrayHelper::remove($globalConfig, 'innerCacheDir');
+        if (!$innerCacheDir) {
+            $cacheDir = Yii::getAlias(rtrim(ArrayHelper::remove($globalConfig, 'cacheDir', self::CACHE_DIR), '/'));
+            FileHelper::removeDirectory($cacheDir);
+            return true;
+        }
+        return false;
+    }
     /**
      * @param $path
      * @return array|bool
