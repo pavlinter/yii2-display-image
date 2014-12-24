@@ -81,12 +81,13 @@ class DisplayHelper
         $id_row = ArrayHelper::remove($options, 'id_row');
         $id_row = $id_row ? $id_row . '/' : '';
 
-        FileHelper::createDirectory($imagesDir . $id_row . $dir);
-        $images = FileHelper::findFiles($imagesDir . $id_row . $dir, $options);
+        $toDir = $imagesDir . $id_row . $dir;
+        FileHelper::createDirectory($toDir);
+        $images = FileHelper::findFiles($toDir, $options);
         $resImages = [];
         if ($isDisplayImagePath) {
             foreach ($images as $k => $image) {
-                $pathName = str_replace($imagesDir . $id_row, '', $image);
+                $pathName = str_replace($imagesDir . $id_row, '', str_replace('\\', '', $image));
                 $key = call_user_func($keyCallback, [
                     'key' => $k,
                     'fullPath' => $image,
@@ -98,7 +99,7 @@ class DisplayHelper
             }
         } else {
             foreach ($images as $k => $image) {
-                $pathName = str_replace($imagesDir . $id_row, '', $image);
+                $pathName = str_replace($imagesDir . $id_row, '', str_replace('\\', '', $image));
                 $key = call_user_func($keyCallback,[
                     'id_row' => $id_row,
                     'key' => $k,
