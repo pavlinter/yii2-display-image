@@ -26,6 +26,7 @@ class DisplayImage extends \yii\base\Widget
     const MODE_INSET    = ManipulatorInterface::THUMBNAIL_INSET;
     const MODE_OUTBOUND = ManipulatorInterface::THUMBNAIL_OUTBOUND;
     const MODE_STATIC   = 'static';
+    const MODE_MIN = 'min';
 
     /**
      * @var integer id from db
@@ -60,12 +61,12 @@ class DisplayImage extends \yii\base\Widget
      */
     public $generalDefaultDir = true;
     /**
-     * @var string the background color for [[DisplayImage::MODE_STATIC]] or [[resize]]
+     * @var string the background color for [[DisplayImage::MODE_STATIC]] or [[DisplayImage::MODE_MIN]] or [[resize]]
      * default white value
      */
-    public $bgColor = '000000';
+    public $bgColor;
     /**
-     * @var integer the background transparent for [[DisplayImage::MODE_STATIC]] or [[resize]]
+     * @var integer the background transparent for [[DisplayImage::MODE_STATIC]] or [[DisplayImage::MODE_MIN]] or [[resize]]
      * default 0 value (not transparent)
      * range 0 - 100
      */
@@ -100,7 +101,7 @@ class DisplayImage extends \yii\base\Widget
      */
     public $absolutePath = false;
     /**
-     * @var string [[DisplayImage::MODE_INSET || DisplayImage::MODE_OUTBOUND || DisplayImage::MODE_STATIC]]
+     * @var string [[DisplayImage::MODE_INSET || DisplayImage::MODE_OUTBOUND || DisplayImage::MODE_STATIC || DisplayImage::MODE_MIN]]
      * or create own resize [[resize]]
      */
     public $mode;
@@ -174,7 +175,7 @@ class DisplayImage extends \yii\base\Widget
         }
 
         $forceConfig = [];
-        $props  = ['imagesWebDir', 'imagesDir', 'defaultWebDir', 'defaultDir', 'defaultImage', 'mode', 'cacheSeconds'];
+        $props  = ['imagesWebDir', 'imagesDir', 'defaultWebDir', 'defaultDir', 'defaultImage', 'mode', 'cacheSeconds', 'bgColor',];
         foreach ($props as $prop) {
             if ($this->{$prop} !== null) {
                 $forceConfig[$prop] = $this->{$prop};
@@ -188,6 +189,7 @@ class DisplayImage extends \yii\base\Widget
             'defaultImage' => 'default.png',
             'mode' => self::MODE_INSET,
             'cacheSeconds' => null,
+            'bgColor' => '000000',
         ];
         $config = ArrayHelper::merge($defaultConfig, $this->config[$this->category], $forceConfig);
 
@@ -218,11 +220,12 @@ class DisplayImage extends \yii\base\Widget
         $this->imagesDir        = Yii::getAlias(rtrim($this->imagesDir, '/')) . '/';
         $this->imagesWebDir     = Yii::getAlias(rtrim($this->imagesWebDir, '/')) . '/';
 
-
-        if ($this->width && !$this->height) {
-            $this->height = $this->width;
-        } elseif(!$this->width && $this->height) {
-            $this->width = $this->height;
+        if ($this->mode !== self::MODE_MIN) {
+            if ($this->width && !$this->height) {
+                $this->height = $this->width;
+            } elseif(!$this->width && $this->height) {
+                $this->width = $this->height;
+            }
         }
 
         if ($this->sizeDirectory === null) {
@@ -290,6 +293,8 @@ class DisplayImage extends \yii\base\Widget
                 $img = call_user_func($this->resize, $this, $img);
             } elseif ($this->mode === self::MODE_STATIC) {
                 $img = $this->resizeStatic($this->width,$this->height,$img);
+            } elseif ($this->mode === self::MODE_MIN) {
+                $img = $this->resizeMin($this->width,$this->height,$img);
             } else {
                 $img = $img->thumbnail(new Box($this->width, $this->height), $this->mode);
             }
@@ -345,6 +350,8 @@ class DisplayImage extends \yii\base\Widget
                 $img = call_user_func($this->resize, $this, $img);
             } elseif ($this->mode === self::MODE_STATIC) {
                 $img = $this->resizeStatic($this->width, $this->height, $img);
+            } elseif ($this->mode === self::MODE_MIN) {
+                $img = $this->resizeMin($this->width, $this->height, $img);
             } else {
                 $img = $img->thumbnail(new Box($this->width, $this->height), $this->mode);
             }
@@ -370,6 +377,51 @@ class DisplayImage extends \yii\base\Widget
         $y = ($Box->getHeight() - $boxNew->getHeight())/2;
 
         $point = new \Imagine\Image\Point($x,$y);
+        $color = new \Imagine\Image\Color('#' . $this->bgColor,$this->bgAlpha);
+
+        return Image::getImagine()->create($Box, $color)->paste($newImage,$point);
+    }
+
+    /**
+     * @param $width
+     * @param $height
+     * @param $originalImage
+     * @return ManipulatorInterface
+     */
+    public function resizeMin($width,$height,$originalImage)
+    {
+        /* @var $originalImage \Imagine\Imagick\Image */
+        /* @var $size \Imagine\Image\Box */
+        $size = $originalImage->getSize();
+        if ($width) {
+            if ($size->getWidth() >= $width) {
+                $divider = $size->getWidth() / $width;
+            } else {
+                $divider = $width / $size->getWidth();
+            }
+            $h = $size->getHeight() / $divider;
+            $w  = $width;
+        } else if ($height) {
+            if ($size->getHeight() >= $height) {
+                $divider = $size->getHeight() / $height;
+            } else {
+                $divider = $height / $size->getHeight();
+            }
+            $w = $size->getWidth() / $divider;
+            $h = $height;
+        } else {
+            $w = $size->getWidth();
+            $h = $size->getHeight();
+        }
+
+        $Box = new Box($w, $h);
+        $newImage = $originalImage->thumbnail($Box);
+        $boxNew = $newImage->getSize();
+
+        $x = ($Box->getWidth() - $boxNew->getWidth())/2;
+        $y = ($Box->getHeight() - $boxNew->getHeight())/2;
+
+        $point = new \Imagine\Image\Point($x, $y);
         $color = new \Imagine\Image\Color('#' . $this->bgColor,$this->bgAlpha);
 
         return Image::getImagine()->create($Box, $color)->paste($newImage,$point);

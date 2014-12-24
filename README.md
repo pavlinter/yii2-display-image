@@ -57,6 +57,8 @@ Yii::$container->set('pavlinter\display\DisplayImage', [
             'mode' => 'ownMode',
             'bgColor' => 'ff0000',
             'resize' => function ($sender, $originalImage) {
+                    /* @var $sender \pavlinter\display\DisplayImage */
+                    /* @var $originalImage \Imagine\Imagick\Image */
 
                     $Box = new \Imagine\Image\Box($sender->width, $sender->height);
                     $newImage = $originalImage->thumbnail($Box);
