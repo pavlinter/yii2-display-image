@@ -71,7 +71,13 @@ class DisplayHelper
             'keyCallback' => function($data){
                 return basename($data['dirName']);
             },
+            'return' => false, // or function($data){ return $data; } required return string|array and image key
         ], $options);
+
+        if ($options['return'] !== false && !($options['return'] instanceof \Closure)) {
+            throw new InvalidConfigException('The "return" property must be Closure.');
+        }
+
 
         $dir = ArrayHelper::remove($options, 'dir');
         $dir = $dir ? $dir . '/' : '';
@@ -88,27 +94,39 @@ class DisplayHelper
         if ($isDisplayImagePath) {
             foreach ($images as $k => $image) {
                 $pathName = str_replace($imagesDir . $id_row, '', str_replace('\\', '', $image));
-                $key = call_user_func($keyCallback, [
+                $data = [
                     'key' => $k,
                     'fullPath' => $image,
                     'dirName' => $pathName,
                     'imagesDir' => $imagesDir . $id_row,
                     'imagesWebDir' => $imagesWebDir . $id_row,
-                ]);
-                $resImages[$key] = $pathName;
+                ];
+                $key = call_user_func($keyCallback, $data);
+                if ($options['return'] === false) {
+                    $resImages[$key] = $pathName;
+                } else {
+                    $data['image'] = $pathName;
+                    $resImages[$key] = call_user_func($options['return'], $data);
+                }
             }
         } else {
             foreach ($images as $k => $image) {
                 $pathName = str_replace($imagesDir . $id_row, '', str_replace('\\', '', $image));
-                $key = call_user_func($keyCallback,[
+                $data = [
                     'id_row' => $id_row,
                     'key' => $k,
                     'fullPath' => $image,
                     'dirName' => $pathName,
                     'imagesDir' => $imagesDir,
                     'imagesWebDir' => $imagesWebDir,
-                ]);
-                $resImages[$key] = $imagesWebDir . $id_row . $pathName;
+                ];
+                $key = call_user_func($keyCallback, $data);
+                if ($options['return'] === false) {
+                    $resImages[$key] = $imagesWebDir . $id_row . $pathName;
+                } else {
+                    $data['image'] = $imagesWebDir . $id_row . $pathName;
+                    $resImages[$key] = call_user_func($options['return'], $data);
+                }
             }
         }
 
@@ -194,8 +212,14 @@ class DisplayHelper
             $widget['id_row'] = $id_row;
         }
         foreach ($images as $k => $image) {
-            $widget['image'] = $image;
-            $displayImages[$k] = DisplayImage::widget($widget);
+            if (is_array($image)) {
+                $widget['image'] = $image['image'];
+                $image['display'] = DisplayImage::widget($widget);
+                $displayImages[$k] = $image;
+            } else {
+                $widget['image'] = $image;
+                $displayImages[$k] = DisplayImage::widget($widget);
+            }
         }
         return $displayImages;
     }

@@ -151,8 +151,7 @@ $images  = DisplayHelper::getImages(null, 'all', [ //or [[getImage()]] return fi
 ], [
     'minImages' => 6,
 ]);
-/*Array
-(
+/*Array(
     [1.jpeg] => /display-images-cache/all/\/70x70_outbound_000000_0/1.jpeg
     [334.gif] => /display-images-cache/all/\/70x70_outbound_000000_0/334.gif
     [360958.jpeg] => /display-images-cache/all/\/70x70_outbound_000000_0/360958.jpeg
@@ -163,12 +162,41 @@ $images  = DisplayHelper::getImages(null, 'all', [ //or [[getImage()]] return fi
 
 $images  = DisplayHelper::getOriginalImages(null, 'all'); //or [[getOriginalImage()]] return first image
 
-/*Array
-(
+/*Array(
     [1.jpeg] => /display-images/images/\1.jpeg
     [334.gif] => /display-images/images/\334.gif
     [360958s.JPEG] => /display-images/images/\360958s.JPEG
     [926.jpg] => /display-images/images/\926.jpg
+)*/
+
+$images  = DisplayHelper::getImages(null, 'all', [ //or [[getImage()]] return first image
+    'width' => 70,
+    'height' => 70,
+], [
+    'return' => function ($data) {
+        return $data; //required return string|array and image key
+    },
+]);
+
+/*Array(
+    [1.jpeg] => Array(
+        [key] => 0
+        [fullPath] => D:/localhost/wamp/www/my/test/yii2/advanced/frontend/web/display-images/images/\1.jpeg
+        [dirName] => 1.jpeg
+        [imagesDir] => D:/localhost/wamp/www/my/test/yii2/advanced/frontend/web/display-images/images/
+        [imagesWebDir] => /display-images/images/
+        [image] => 1.jpeg
+        [display] => /display-images-cache/all/70x70_outbound_000000_0/1.jpeg
+    )
+    [334.gif] => Array(
+        [key] => 1
+        [fullPath] => D:/localhost/wamp/www/my/test/yii2/advanced/frontend/web/display-images/images/\334.gif
+        [dirName] => 334.gif
+        [imagesDir] => D:/localhost/wamp/www/my/test/yii2/advanced/frontend/web/display-images/images/
+        [imagesWebDir] => /display-images/images/
+        [image] => 334.gif
+        [display] => /display-images-cache/all/70x70_outbound_000000_0/334.gif
+    )
 )*/
 
 $clearItemId = DisplayHelper::clear('items', 2);
