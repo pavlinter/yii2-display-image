@@ -46,7 +46,7 @@ class DisplayHelper
      */
     public static function getFiles($category, $options = [])
     {
-        $globalConfig = self::getConfig();
+        $globalConfig = static::getConfig();
         if (empty($globalConfig['config'])) {
             return false;
         }
@@ -152,7 +152,7 @@ class DisplayHelper
             $options['dir'] = trim($options['dir'], '/');
         }
         if (!isset($options['only'])) {
-            $extensions = self::supported();
+            $extensions = static::supported();
             foreach ($extensions as $ext) {
                 $options['only'][] = '*.' . $ext;
             }
@@ -161,7 +161,7 @@ class DisplayHelper
             }
         }
 
-        $files = self::getFiles($category, $options);
+        $files = static::getFiles($category, $options);
 
         if (!is_array($files)) {
             return [];
@@ -177,7 +177,7 @@ class DisplayHelper
      */
     public static function getOriginalImage($id_row, $category, $options = [])
     {
-        $images = self::getOriginalImages($id_row, $category, $options);
+        $images = static::getOriginalImages($id_row, $category, $options);
         if (empty($images)) {
             return null;
         }
@@ -195,7 +195,7 @@ class DisplayHelper
     {
         $options['isDisplayImagePath'] = true;
         $minImages  = ArrayHelper::remove($options, 'minImages');
-        $images     = self::getOriginalImages($id_row, $category, $options);
+        $images     = static::getOriginalImages($id_row, $category, $options);
 
         if ($minImages && ($count = $minImages - count($images)) > 0) {
             for ($i = 0; $i < $count; $i++) {
@@ -233,7 +233,7 @@ class DisplayHelper
      */
     public static function getImage($id_row, $category, $widget = [], $options = [])
     {
-        $images = self::getImages($id_row, $category, $widget, $options);
+        $images = static::getImages($id_row, $category, $widget, $options);
 
         if (empty($images)) {
             return null;
@@ -248,19 +248,19 @@ class DisplayHelper
      */
     public static function clear($category, $id_row = null)
     {
-        $globalConfig = self::getConfig();
+        $globalConfig = static::getConfig();
         $categories = ArrayHelper::remove($globalConfig, 'config');
 
         if (!isset($categories[$category])) {
             return false;
         }
         $innerCacheDir = ArrayHelper::remove($globalConfig, 'innerCacheDir');
-        $cacheDir = Yii::getAlias(rtrim(ArrayHelper::remove($globalConfig, 'cacheDir', self::CACHE_DIR), '/'));
+        $cacheDir = Yii::getAlias(rtrim(ArrayHelper::remove($globalConfig, 'cacheDir', static::CACHE_DIR), '/'));
         $generalDefaultDir = ArrayHelper::remove($categories[$category], 'generalDefaultDir');
         if ($generalDefaultDir === null) {
             $generalDefaultDir = ArrayHelper::remove($globalConfig, 'generalDefaultDir', true);
         }
-        $defaultCategory = ArrayHelper::remove($categories[$category], 'defaultCategory', self::DEFAULT_CATEGORY);
+        $defaultCategory = ArrayHelper::remove($categories[$category], 'defaultCategory', static::DEFAULT_CATEGORY);
         $imagesDir = Yii::getAlias(rtrim(ArrayHelper::remove($categories[$category], 'imagesDir'), '/'));
         $defaultDir = Yii::getAlias(rtrim(ArrayHelper::remove($categories[$category], 'defaultDir'), '/'));
 
@@ -291,11 +291,11 @@ class DisplayHelper
      */
     public static function clearCacheDir()
     {
-        $globalConfig = self::getConfig();
+        $globalConfig = static::getConfig();
 
         $innerCacheDir = ArrayHelper::remove($globalConfig, 'innerCacheDir');
         if (!$innerCacheDir) {
-            $cacheDir = Yii::getAlias(rtrim(ArrayHelper::remove($globalConfig, 'cacheDir', self::CACHE_DIR), '/'));
+            $cacheDir = Yii::getAlias(rtrim(ArrayHelper::remove($globalConfig, 'cacheDir', static::CACHE_DIR), '/'));
             FileHelper::removeDirectory($cacheDir);
             return true;
         }
@@ -310,8 +310,8 @@ class DisplayHelper
         if (!is_file($path)) {
             return false;
         }
-        $ext = self::getExtension($path);
-        return self::supported($ext);
+        $ext = static::getExtension($path);
+        return static::supported($ext);
     }
 
     /**
