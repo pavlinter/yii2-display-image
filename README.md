@@ -82,6 +82,13 @@ Usage
 use pavlinter\display\DisplayHelper;
 use pavlinter\display\DisplayImage;
 
+echo DisplayImage::widget([
+    'width' => 120,
+    'image' => '1.jpg',
+    'category' => 'all',
+    'cacheSeconds' => 'auto', //auto is default value. Rewrite image if modified file date is different
+]);
+
 echo DisplayImage::widget([ //subfolders image
     'width' => 120,
     'image' => '/subfolders/bg.jpg', // or subfolders/bg.jpg

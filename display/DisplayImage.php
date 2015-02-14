@@ -150,9 +150,12 @@ class DisplayImage extends \yii\base\Widget
      */
     public $innerCacheDir; //example: 'cacheDirectory' takes precedence over [[cacheDir]]
     /**
-     * @var integer rewrite resized image after seconds
+     * integer - rewrite image after seconds
+     * null - disable rewrite image
+     * 'auto' - rewrite image if modified file date is different
+     * @var integer|null|string
      */
-    public $cacheSeconds;
+    public $cacheSeconds = 'auto';
 
     /**
      * @throws InvalidConfigException
@@ -283,7 +286,15 @@ class DisplayImage extends \yii\base\Widget
 
         $exists = file_exists($defaultDir . $this->sizeDirectory . $this->defaultImage);
         if ($exists && $this->cacheSeconds !== null) {
-            $exists = time() <= $this->cacheSeconds + filemtime($defaultDir . $this->sizeDirectory . $this->defaultImage);
+            $cacheFiletime = filemtime($defaultDir . $this->sizeDirectory . $this->defaultImage);
+            if ($this->cacheSeconds === 'auto') {
+                $filemtime = filemtime($filename);
+                if ($filemtime !== $cacheFiletime) {
+                    $exists = false;
+                }
+            } else {
+                $exists = time() <= $this->cacheSeconds + $cacheFiletime;
+            }
         }
 
         if (!$exists) {
@@ -298,7 +309,13 @@ class DisplayImage extends \yii\base\Widget
             } else {
                 $img = $img->thumbnail(new Box($this->width, $this->height), $this->mode);
             }
-            $img->save($defaultDir . $this->sizeDirectory . $this->defaultImage);
+            $newImage = $defaultDir . $this->sizeDirectory . $this->defaultImage;
+
+            $img->save($newImage);
+            if ($this->cacheSeconds === 'auto') {
+                $filemtime = filemtime($filename);
+                touch($newImage, $filemtime);
+            }
         }
         return $defaultWebDir . $this->sizeDirectory . $this->defaultImage;
     }
@@ -343,7 +360,17 @@ class DisplayImage extends \yii\base\Widget
 
         $exists = file_exists($imagesDir . $this->sizeDirectory. $dir . $image);
         if ($exists && $this->cacheSeconds !== null) {
-            $exists = time() <= $this->cacheSeconds + filemtime($imagesDir . $this->sizeDirectory. $dir . $image);
+            $cacheFiletime = filemtime($imagesDir . $this->sizeDirectory. $dir . $image);
+            if ($this->cacheSeconds === 'auto') {
+                $filemtime = filemtime($filename);
+                if ($filemtime !== $cacheFiletime) {
+                    $exists = false;
+                }
+            } else {
+                $exists = time() <= $this->cacheSeconds + $cacheFiletime;
+            }
+
+
         }
         if (!$exists) {
             if ($this->resize) {
@@ -356,7 +383,14 @@ class DisplayImage extends \yii\base\Widget
                 $img = $img->thumbnail(new Box($this->width, $this->height), $this->mode);
             }
             FileHelper::createDirectory($imagesDir . $this->sizeDirectory . $dir);
-            $img->save($imagesDir . $this->sizeDirectory . $dir . $image);
+            $newImage = $imagesDir . $this->sizeDirectory . $dir . $image;
+            $img->save($newImage);
+
+            if ($this->cacheSeconds === 'auto') {
+                $filemtime = filemtime($filename);
+                touch($newImage, $filemtime);
+            }
+
         }
         return $imagesWebDir . $this->sizeDirectory . $dir . $image;
     }
