@@ -72,7 +72,10 @@ class DisplayHelper
                 return basename($data['dirName']);
             },
             'return' => false, // or function($data){ return $data; } required return string|array and image key
+            'minImages' => 0
         ], $options);
+
+
 
         if ($options['return'] !== false && !($options['return'] instanceof \Closure)) {
             throw new InvalidConfigException('The "return" property must be Closure.');
@@ -84,6 +87,7 @@ class DisplayHelper
         $keyCallback = ArrayHelper::remove($options, 'keyCallback');
         $isDisplayImagePath = ArrayHelper::remove($options, 'isDisplayImagePath');
         $defaultImage = ArrayHelper::remove($options, 'defaultImage');
+        $minImages = ArrayHelper::remove($options, 'minImages');
         $id_row = ArrayHelper::remove($options, 'id_row');
         $id_row = $id_row ? $id_row . '/' : '';
 
@@ -95,11 +99,13 @@ class DisplayHelper
             foreach ($images as $k => $image) {
                 $pathName = str_replace($imagesDir . $id_row, '', str_replace('\\', '', $image));
                 $data = [
+                    'id_row' => (int)$id_row,
                     'key' => $k,
                     'fullPath' => $image,
                     'dirName' => $pathName,
                     'imagesDir' => $imagesDir . $id_row,
                     'imagesWebDir' => $imagesWebDir . $id_row,
+                    'originImage' => $imagesWebDir . $id_row . $pathName,
                 ];
                 $key = call_user_func($keyCallback, $data);
                 if ($options['return'] === false) {
@@ -113,27 +119,48 @@ class DisplayHelper
             foreach ($images as $k => $image) {
                 $pathName = str_replace($imagesDir . $id_row, '', str_replace('\\', '', $image));
                 $data = [
-                    'id_row' => $id_row,
+                    'id_row' => (int)$id_row,
                     'key' => $k,
                     'fullPath' => $image,
                     'dirName' => $pathName,
                     'imagesDir' => $imagesDir,
                     'imagesWebDir' => $imagesWebDir,
+                    'originImage' => $imagesWebDir . $id_row . $pathName,
                 ];
                 $key = call_user_func($keyCallback, $data);
                 if ($options['return'] === false) {
-                    $resImages[$key] = $imagesWebDir . $id_row . $pathName;
+                    $resImages[$key] = $data['originImage'];
                 } else {
-                    $data['image'] = $imagesWebDir . $id_row . $pathName;
+                    $data['image'] = $data['originImage'];
                     $resImages[$key] = call_user_func($options['return'], $data);
                 }
             }
         }
 
-        if (empty($resImages) && $defaultImage) {
-            $resImages[$defaultImage] = $defaultImage;
-        }
 
+        if ($minImages && ($count = $minImages - count($resImages)) > 0) {
+
+            if ($options['return'] === false) {
+                for ($i = 0; $i < $count; $i++) {
+                    $resImages[$i] = $defaultImage;
+                }
+            } else {
+
+                for ($i = 0; $i < $count; $i++) {
+                    $data = [
+                        'id_row' => (int)$id_row,
+                        'key' => $i,
+                        'fullPath' => null,
+                        'dirName' => null,
+                        'imagesDir' => $imagesDir,
+                        'imagesWebDir' => $imagesWebDir,
+                        'originImage' => $defaultImage,
+                        'image' => $defaultImage,
+                    ];
+                    $resImages[$i] = call_user_func($options['return'], $data);
+                }
+            }
+        }
         return $resImages;
     }
     /**
@@ -194,15 +221,7 @@ class DisplayHelper
     public static function getImages($id_row, $category, $widget = [], $options = [])
     {
         $options['isDisplayImagePath'] = true;
-        $minImages  = ArrayHelper::remove($options, 'minImages');
         $images     = static::getOriginalImages($id_row, $category, $options);
-
-        if ($minImages && ($count = $minImages - count($images)) > 0) {
-            for ($i = 0; $i < $count; $i++) {
-                $images[] = 'default';
-            }
-        }
-
         $displayImages = [];
         if (!isset($widget['returnSrc'])) {
             $widget['returnSrc'] = true;
@@ -215,6 +234,13 @@ class DisplayHelper
             if (is_array($image)) {
                 $widget['image'] = $image['image'];
                 $image['display'] = DisplayImage::widget($widget);
+                if ($image['image'] === null) {
+                    $image['image'] = $image['display'];
+                }
+                if ($image['originImage'] === null) {
+                    $image['originImage'] = $image['display'];
+                }
+
                 $displayImages[$k] = $image;
             } else {
                 $widget['image'] = $image;
