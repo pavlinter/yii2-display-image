@@ -20,6 +20,8 @@ class DisplayHelper
 {
     static $config;
 
+    static $displayImage = 'pavlinter\display\DisplayImage';
+
     const CACHE_DIR = '@webroot/display-images-cache';
 
     const DEFAULT_CATEGORY = 'default';
@@ -31,8 +33,8 @@ class DisplayHelper
     {
         if (static::$config === null) {
             $definitions = Yii::$container->getDefinitions();
-            if (isset($definitions['pavlinter\display\DisplayImage'])) {
-                return $definitions['pavlinter\display\DisplayImage'];
+            if (isset($definitions[static::$displayImage])) {
+                return $definitions[static::$displayImage];
             }
         }
         return static::$config;

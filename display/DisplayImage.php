@@ -23,6 +23,8 @@ use Imagine\Image\ManipulatorInterface;
  */
 class DisplayImage extends \yii\base\Widget
 {
+    static $maxResized = 0;
+
     const MODE_INSET    = ManipulatorInterface::THUMBNAIL_INSET;
     const MODE_OUTBOUND = ManipulatorInterface::THUMBNAIL_OUTBOUND;
     const MODE_STATIC   = 'static';
@@ -156,6 +158,10 @@ class DisplayImage extends \yii\base\Widget
      * @var integer|null|string
      */
     public $cacheSeconds = 'auto';
+    /**
+     * @var integer max image resize for one request
+     */
+    public $maxResize = 20;
 
     /**
      * @throws InvalidConfigException
@@ -298,6 +304,12 @@ class DisplayImage extends \yii\base\Widget
         }
 
         if (!$exists) {
+
+            if (static::$maxResized >= $this->maxResize) {
+                return $defaultWebDir . $this->defaultImage;
+            }
+            self::$maxResized++;
+
             FileHelper::createDirectory($defaultDir . $this->sizeDirectory);
             $img = Image::getImagine()->open($filename);
             if ($this->resize) {
@@ -373,6 +385,12 @@ class DisplayImage extends \yii\base\Widget
 
         }
         if (!$exists) {
+
+            if (static::$maxResized >= $this->maxResize) {
+                return $this->imagesWebDir . $idRowPath . $this->image;
+            }
+            self::$maxResized++;
+
             if ($this->resize) {
                 $img = call_user_func($this->resize, $this, $img);
             } elseif ($this->mode === self::MODE_STATIC) {
