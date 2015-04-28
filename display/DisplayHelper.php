@@ -3,7 +3,7 @@
 /**
  * @copyright Copyright &copy; Pavels Radajevs, 2014
  * @package yii2-display-image
- * @version 1.1.2
+ * @version 1.1.3
  */
 
 namespace pavlinter\display;
