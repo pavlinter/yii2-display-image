@@ -157,6 +157,7 @@ $images  = DisplayHelper::getImages(null, 'all', [ //or [[getImage()]] return fi
     'height' => 70,
 ], [
     'minImages' => 6,
+    'maxImages' => 10,
 ]);
 /*Array(
     [1.jpeg] => /display-images-cache/all/\/70x70_outbound_000000_0/1.jpeg

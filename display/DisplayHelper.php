@@ -90,6 +90,7 @@ class DisplayHelper
         $isDisplayImagePath = ArrayHelper::remove($options, 'isDisplayImagePath');
         $defaultImage = ArrayHelper::remove($options, 'defaultImage');
         $minImages = ArrayHelper::remove($options, 'minImages');
+        $maxImages = ArrayHelper::remove($options, 'maxImages');
         $id_row = ArrayHelper::remove($options, 'id_row');
         $id_row = $id_row ? $id_row . '/' : '';
 
@@ -99,6 +100,9 @@ class DisplayHelper
         $resImages = [];
         if ($isDisplayImagePath) {
             foreach ($images as $k => $image) {
+                if ($maxImages !== null && $k >= $maxImages) {
+                    break;
+                }
                 $pathName = str_replace($imagesDir . $id_row, '', str_replace('\\', '', $image));
                 $data = [
                     'id_row' => (int)$id_row,
@@ -119,6 +123,9 @@ class DisplayHelper
             }
         } else {
             foreach ($images as $k => $image) {
+                if ($maxImages !== null && $k >= $maxImages) {
+                    break;
+                }
                 $pathName = str_replace($imagesDir . $id_row, '', str_replace('\\', '', $image));
                 $data = [
                     'id_row' => (int)$id_row,
