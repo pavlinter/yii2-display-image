@@ -3,7 +3,7 @@
 /**
  * @copyright Copyright &copy; Pavels Radajevs, 2014
  * @package yii2-display-image
- * @version 1.1.3
+ * @version 1.1.4
  */
 
 namespace pavlinter\display;
@@ -339,7 +339,6 @@ class DisplayImage extends \yii\base\Widget
      */
     public function resize($filename, $idRowPath)
     {
-        $img        = Image::getImagine()->open($filename);
         $image      = $this->image;
         $basename   = basename($image);
         $dir        = '';
@@ -385,7 +384,8 @@ class DisplayImage extends \yii\base\Widget
 
         }
         if (!$exists) {
-
+            $img = Image::getImagine()->open($filename);
+            
             if (static::$maxResized >= $this->maxResize) {
                 return $this->imagesWebDir . $idRowPath . $this->image;
             }
